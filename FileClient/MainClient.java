@@ -7,9 +7,9 @@ package FileClient;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -18,7 +18,11 @@ import java.util.Scanner;
  * @author stygianlgdonic
  */
 public class MainClient {
-
+    
+    static FileOutputStream fos;
+    static DataInputStream din;
+    static DataOutputStream dout;
+    
     public static void main(String args[]) throws Exception {
 
         // Client's file request
@@ -34,34 +38,52 @@ public class MainClient {
         Socket s = new Socket(address, 5000);
         //connection setup
 
-        DataInputStream din = new DataInputStream(s.getInputStream());
-        DataOutputStream dout = new DataOutputStream(s.getOutputStream());
+        din = new DataInputStream(s.getInputStream());
+        dout = new DataOutputStream(s.getOutputStream());
 
         dout.writeUTF(filename1);
 
         String filename = "";
 
-        try {
             dout.flush();
 
             byte check = din.readByte();
             if (check == 1) {
                 // if file found Start recieving
-                
-                filename = din.readUTF();
-                System.out.println("Receving file: " + filename);
-                filename = "client" + filename;
-                System.out.println("Saving as file: " + filename);
 
-                long sz = Long.parseLong(din.readUTF());
-                System.out.println("File Size: " + (sz / (1024 * 1024)) + " MB");
-
-                byte b[] = new byte[1024];
-                System.out.println("Receving file..");
+                startRecieving(filename);
                 
-                // Client's save directory
-                FileOutputStream fos = new FileOutputStream(new File(
-                        "C:\\Users\\mbird\\Desktop\\" + filename), true);
+                System.out.println("Closing Connection");
+
+                fos.close();
+                din.close();
+                dout.close();
+                s.close();
+            } else {
+                // if file not found Close Connection
+                System.out.println("FileNotFound");
+                System.out.println("Closing Connection");
+                dout.close();
+                din.close();
+                s.close();
+
+            }
+    }
+    
+    public static void startRecieving(String filename) throws IOException {
+        filename = din.readUTF();
+        System.out.println("Receving file: " + filename);
+        filename = "client" + filename;
+        System.out.println("Saving as file: " + filename);
+
+        long sz = Long.parseLong(din.readUTF());
+        System.out.println("File Size: " + (sz / (1024 * 1024)) + " MB");
+
+        byte b[] = new byte[1024];
+        System.out.println("Receving file..");
+        // Client's save directory
+        fos = new FileOutputStream(new File(
+                "C:\\Users\\aliik\\Desktop\\" + filename), true);
 
                 long bytesRead;
 
@@ -73,27 +95,8 @@ public class MainClient {
                 } while (!(bytesRead < 1024));
 
                 System.out.println("Completed");
-                System.out.println("Closing Connection");
 
-                fos.close();
-                dout.close();
-                s.close();
-            } else {
-                // if file not found Close Connection
-                System.out.println("FileNotFound");
-                System.out.println("Closing Connection");
-                dout.close();
-                din.close();
-                s.close();
-            }
 
-        } catch (EOFException e) {
-            System.out.println("Some Error Has occured");
-            System.out.println("Closing Connection");
-            dout.close();
-            din.close();
-            s.close();
-        }
     }
-
+    
 }
